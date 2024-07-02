@@ -1,6 +1,6 @@
 # HackathonOcticodeGp4
 
-Procédure détaillée incluant la création, la validation et l'expiration des jetons de session.
+## Procédure détaillée incluant la création, la validation et l'expiration des jetons de session.
 
 ### 1. Création du Jeton de Session
 
