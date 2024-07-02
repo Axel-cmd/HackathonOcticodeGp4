@@ -26,11 +26,9 @@ model Session {
 }
 
 model User {
-  id    Int      @id @default(autoincrement())
-  name  String   @db.VarChar(255)
-  email String   @unique(map: "email") @db.VarChar(255)
-  iat   DateTime @db.Timestamp(0)
-  exp   DateTime @db.Timestamp(0)
-  role  String   @db.VarChar(50)
+  id    Int    @id @default(autoincrement())
+  name  String @db.VarChar(255)
+  email String @unique(map: "email") @db.VarChar(255)
+  role  String @db.VarChar(50)
   Card  Card[]
 }
