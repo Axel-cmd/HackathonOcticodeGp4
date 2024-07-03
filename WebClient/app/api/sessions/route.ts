@@ -28,3 +28,50 @@ export async function GET() {
     });
   }
 }
+// Endpoint pour valider le QR Code
+export async function POST(request: Request) {
+  try {
+    const { token } = await request.json();
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Token is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const session = await prisma.session.findUnique({
+      where: { token },
+    });
+
+    if (!session) {
+      return new Response(JSON.stringify({ error: "Session not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Vérifier la date d'expiration et le statut de la session
+    const now = new Date();
+    if (session.expires_at < now || session.status !== 1) {
+      return new Response(JSON.stringify({ valid: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Si la session est valide, retourner un succès
+    return new Response(JSON.stringify({ valid: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error(error);
+    return new Response(
+      JSON.stringify({ error: "Failed to validate session" }),
+      {
+        status: 500,
+      }
+    );
+  }
+}
