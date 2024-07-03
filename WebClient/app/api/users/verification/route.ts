@@ -1,20 +1,22 @@
-import io from "@/app/socketServer";
+import io from "@/socketServer";
 import { prisma } from "../../../../prisma/db";
 import jwt from "jsonwebtoken";
 
-const secret = ""; // Remplacez par votre clé secrète JWT
-
 export async function POST(request: Request) {
   try {
-    const { token } = await request.json();
+    const { sessionToken, token } = await request.json();
 
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Token is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!sessionToken || !token) {
+      return new Response(
+        JSON.stringify({ error: "Token and session are required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
 
+    // Décoder le token JWT
     let decoded: any;
     try {
       decoded = jwt.decode(token);
@@ -49,7 +51,34 @@ export async function POST(request: Request) {
       });
     }
 
-    io.emit("redirect", { url: "/app" });
+    // Rechercher la session par sessionToken
+    const session = await prisma.session.findUnique({
+      where: { token: sessionToken },
+    });
+
+    if (!session) {
+      return new Response(JSON.stringify({ error: "Session not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Vérifier si la session est valide
+    const now = new Date();
+    if (session.expires_at < now || session.status !== 1) {
+      return new Response(
+        JSON.stringify({ error: "Session is invalid or expired" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    io.emit("redirect", {
+      url: "/app",
+      sessionToken: sessionToken,
+    });
 
     // Retourner les informations de l'utilisateur
     return new Response(JSON.stringify(user), {

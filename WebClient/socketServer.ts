@@ -12,6 +12,11 @@ io.on("connection", (socket: Socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });
+
+  // socket.on("redirect", (data) => {
+  //   console.log(`Redirect data received: ${data}`);
+  //   socket.disconnect();
+  // });
 });
 
 export default io;
