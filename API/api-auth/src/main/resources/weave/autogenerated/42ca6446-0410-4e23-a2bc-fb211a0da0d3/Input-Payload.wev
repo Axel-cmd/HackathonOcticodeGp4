@@ -1,0 +1,7 @@
+%dw 2.0
+
+type auto_42ca6446_0410_4e23_a2bc_fb211a0da0d3_Input_Payload = {
+  sessionID?: String, 
+  _?: Any
+}
+

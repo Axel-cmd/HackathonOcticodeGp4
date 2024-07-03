@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<sub-flow name="get_users" doc:id="71d172b4-9df2-43b7-9b4a-4862fa45fd57" >
+		<db:select doc:name="get users" doc:id="ef5a771c-b0f7-4912-a0c3-22a5fbe2fd6b" config-ref="Database_Config_Mysql">
+			<db:sql><![CDATA[SELECT * FROM `user` ]]></db:sql>
+			<db:input-parameters><![CDATA[{"id": id, "name":name, "role":role}]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="5e68bcab-491b-45bc-862a-cd375d73a626" message="#[payload]" />
+	</sub-flow>
+</mule>

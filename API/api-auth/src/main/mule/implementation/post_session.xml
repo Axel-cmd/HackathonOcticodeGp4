@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<sub-flow name="post_session" doc:id="c6c26b03-1efd-4fe0-a13d-0e2e899e0254" >
+		<ee:transform doc:name="Generate session payload" doc:id="125fa959-7933-46ed-b538-17386e5a92d5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+import * from dw::core::Periods
+---
+{
+	"sessionToken": uuid(), 
+	"status": 1 , 
+	"created_at": now() as DateTime {format : "yyyy-MM-dd HH:mm:ss"}, 
+	"expires_at": (now() + minutes(5)) as DateTime {format : "yyyy-MM-dd HH:mm:ss"} 
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert session into Mysql" doc:id="adef7858-e53d-4e2d-9181-6f6b10a76018" config-ref="Database_Config_Mysql" target="sessionDB">
+			<db:sql><![CDATA[INSERT INTO session (token, status, created_at, expires_at)
+VALUES (:sessionToken, :status, :created_at, :expires_at);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Return sessionId to client" doc:id="3018aa09-ea1c-4134-9ac1-179a1af4059b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload.sessionToken]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>

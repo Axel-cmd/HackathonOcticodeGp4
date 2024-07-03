@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<sub-flow name="post_authenticate" doc:id="42ca6446-0410-4e23-a2bc-fb211a0da0d3" >
+		<ee:transform doc:name="Decode JWT" doc:id="a4bac512-6c6c-464d-bb43-38bc5b45fd18">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="sessionToken"><![CDATA[%dw 2.0
+output application/json
+---
+payload.sessionToken]]></ee:set-variable>
+				<ee:set-variable variableName="jwt"><![CDATA[%dw 2.0
+import fromBase64 from dw::core::Binaries
+output application/json
+var splitPayload = (payload.jwt splitBy ".")
+---
+
+read(fromBase64(splitPayload[1]),"application/json") 
+
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:select doc:name="Select by sessionToken" doc:id="0060f9cd-84c5-4fae-9616-802de288fa29" config-ref="Database_Config_Mysql" target="verifyToken">
+			<db:sql><![CDATA[SELECT * FROM `session` WHERE token = :sessionToken]]></db:sql>
+			<db:input-parameters><![CDATA[#[{"sessionToken": vars.sessionToken}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="222b2f69-f3af-43a1-b940-bdc4f53c707b">
+			<when expression="#[vars.verifyToken[0].expires_at &lt; (now() as DateTime &gt;&gt; &quot;CET&quot;) as String {format : &quot;yyyy-MM-dd'T'HH:mm:ss&quot;}]">
+				<db:update doc:name="Update status waiting" doc:id="307d2536-159a-44d8-a7cf-b3d9cb713338" config-ref="Database_Config_Mysql">
+					<db:sql ><![CDATA[UPDATE `session` SET `status`= :status WHERE `sessionToken`= :sessionToken]]></db:sql>
+					<db:input-parameters ><![CDATA[#[vars.verifyToken]]]></db:input-parameters>
+				</db:update>
+				<ee:transform doc:name="Status waiting" doc:id="88c4d81f-2019-497c-979c-bbb9526e0d71">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Status en attente"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Session invalide" doc:id="74596977-298c-4c56-a24f-ba84d69ad6c7">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"La session est expirée veuillez recommencer"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+</mule>

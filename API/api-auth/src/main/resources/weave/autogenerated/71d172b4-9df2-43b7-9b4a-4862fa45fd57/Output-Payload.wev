@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_71d172b4_9df2_43b7_9b4a_4862fa45fd57_Output_Payload = Array<{  role?: String,   name?: String,   id?: Number,   email?: String,   _?: Any}>
+

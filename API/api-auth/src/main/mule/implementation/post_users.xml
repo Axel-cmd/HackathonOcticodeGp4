@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<sub-flow name="post_users" doc:id="ce2c5384-dbd2-40ba-9802-2a2c38753629" >
+		<db:select doc:name="Select user" doc:id="479add60-3d1a-4878-892b-d3a79f63455e" config-ref="Database_Config_Mysql" target="verifyUser">
+			<db:sql><![CDATA[SELECT * FROM `User` WHERE email = :email]]></db:sql>
+			<db:input-parameters><![CDATA[#[vars.jwt]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Choice" doc:id="540b3dc2-029e-40ea-b2c6-08b54e33d74a">
+			<when expression="#[isEmpty(vars.verifyUser[0])]">
+				<ee:transform doc:name="Update card info" doc:id="15058c9d-5432-44d4-a32c-208d2b309b9f">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  "name": vars.jwt.name,
+  "email": vars.jwt.email,
+  "role": vars.jwt.role
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<db:insert doc:name="Insert new user" doc:id="595b3bdb-66d5-4e96-b5e3-f8bb4b31fe41" config-ref="Database_Config_Mysql">
+					<db:sql><![CDATA[INSERT INTO `user`(`name`, `email`, `role`) VALUES (:name, :email, :role);]]></db:sql>
+					<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+				</db:insert>
+				<db:update doc:name="Update status authorized" doc:id="fc89ef32-ab61-486d-a070-73def089fca7" config-ref="Database_Config_Mysql">
+					<db:sql><![CDATA[UPDATE `session` SET `status`= :status WHERE `sessionToken` = :sessionToken]]></db:sql>
+					<db:input-parameters><![CDATA[#[payload ++ {"sessionToken": vars.sessionToken}]]]></db:input-parameters>
+				</db:update>
+			</when>
+			<otherwise>
+				<db:update doc:name="Update status authorized" doc:id="58d4f99f-d7f5-43bc-99d2-1f01a0034a05" config-ref="Database_Config_Mysql">
+					<db:sql><![CDATA[UPDATE `session` SET `status`= :status WHERE `sessionToken` = :sessionToken]]></db:sql>
+					<db:input-parameters><![CDATA[#[vars.jwt ++ {"sessionToken": vars.sessionToken}]]]></db:input-parameters>
+				</db:update>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Authication successful" doc:id="73b2fcc0-e68f-484f-ba06-276e8aed3153">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Authentification réussie"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>
