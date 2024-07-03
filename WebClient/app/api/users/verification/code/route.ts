@@ -2,24 +2,33 @@ import { prisma } from "../../../../../prisma/db";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, role, code } = await request.json();
+    const { email, code } = await request.json();
 
-    const user = await prisma.user.create({
-      data: {
-        name: name,
-        email: email,
-        role: role,
-        code: code,
-      },
+    const user = await prisma.user.findUnique({
+      where: { email: email },
     });
 
-    return new Response(JSON.stringify(user), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
+    if (!user) {
+      return new Response(JSON.stringify({ error: "User not found" }), {
+        status: 404,
+      });
+    }
+
+    if (user.code === code) {
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+      });
+    } else {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid code" }),
+        {
+          status: 401,
+        }
+      );
+    }
   } catch (error) {
     console.error(error);
-    return new Response(JSON.stringify({ error: "User creation failed" }), {
+    return new Response(JSON.stringify({ error: "Verification failed" }), {
       status: 500,
     });
   }

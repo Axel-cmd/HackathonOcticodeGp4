@@ -2,13 +2,14 @@ import { prisma } from "../../../prisma/db";
 
 export async function POST(request: Request) {
   try {
-    const { name, email, role } = await request.json();
+    const { name, email, role, code } = await request.json();
 
     const user = await prisma.user.create({
       data: {
         name: name,
         email: email,
         role: role,
+        code: code,
       },
     });
 
