@@ -34,8 +34,12 @@ class _HomePageState extends State<HomePage> {
 
   // send data to api
   Future<void> sendData() async {
+    print("Here");
+    print(_qrCodeResult);
+    print(_tagScanned);
+
     final response = await http.post(
-      Uri.parse('http://localhost:3000/api/users/verification/code'),
+      Uri.parse('https://hackathon-octicode-gp4.vercel.app/api/users/verification'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
       },
@@ -45,7 +49,7 @@ class _HomePageState extends State<HomePage> {
       }),
     );
 
-    if (response.statusCode == 201) {
+    if (response.statusCode == 200) {
       // Si la requête a réussi, décodez le JSON
       Map<String, dynamic> data = jsonDecode(response.body);
       print('Request result');
@@ -113,12 +117,7 @@ class _HomePageState extends State<HomePage> {
           if(result != null) {
 
             print('Value scanner : \n');
-            print(result.toString());
-            print(result.startsWith('ey'));
-
-            if (result.startsWith('en')) {
-              result = result.substring(2); // Supprimer les deux premiers caractères (en)
-            }
+            print(result);
 
             setState(() {
               _tagScanned = result;
@@ -173,11 +172,23 @@ class _NFCBottomSheetState extends State<NFCBottomSheet> {
           return;
         }
 
-        String payload = message.records.map((record) => String.fromCharCodes(record.payload)).join(', ');
+        // String payload = message.records.map((record) => String.fromCharCodes(record.payload)).join(', ');
 
-        setState(() {
-          _nfcData = payload;
-        });
+        // setState(() {
+        //   _nfcData = payload;
+        // });
+
+        for (var record in message.records) { 
+            if (record.payload.isNotEmpty) {
+              // Skip the language code (first byte) for text records
+              int languageCodeLength = record.payload.first;
+              String payload = String.fromCharCodes(record.payload.skip(1 + languageCodeLength));
+              setState(() {
+                _nfcData = payload;
+              });
+              break;
+            }
+        }
 
         // stop nfc session
         NfcManager.instance.stopSession();
